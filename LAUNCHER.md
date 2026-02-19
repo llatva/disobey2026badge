@@ -45,13 +45,17 @@ mod your_game {
             // Handle game over
             if game_over {
                 // Wait for A to restart or SELECT to quit
+                // Button indices for select_array results
+                const BTN_A: usize = 0;
+                const BTN_SELECT: usize = 1;
+                
                 let pressed = embassy_futures::select::select_array([
                     Buttons::debounce_press(&mut buttons.a),
                     Buttons::debounce_press(&mut buttons.select),
                 ])
                 .await;
 
-                if pressed.1 == 1 {
+                if pressed.1 == BTN_SELECT {
                     // Select pressed - return to menu
                     return;
                 } else {
@@ -81,10 +85,10 @@ In the `launcher_task` function, add a case for your game in the match statement
 
 ```rust
 match state.selected_index {
-    0 => snake::run(display, backlight, leds, buttons_for_select).await,
-    1 => run_breakout(display, backlight, leds, buttons_for_select).await,
+    0 => snake::run(display, backlight, leds, buttons).await,
+    1 => run_breakout(display, backlight, leds, buttons).await,
     // ... existing cases ...
-    N => your_game::run(display, backlight, leds, buttons_for_select).await,
+    N => your_game::run(display, backlight, leds, buttons).await,
     _ => {}
 }
 ```
@@ -169,11 +173,12 @@ While the launcher requires ESP32-S3 hardware and toolchain to run, you can:
 
 Potential improvements to the launcher system:
 
-1. **Persistent Settings**: Save last selected game
-2. **High Score Tracking**: Share scores across launcher restarts  
-3. **Game Categories**: Organize into Games, Demos, Utilities
-4. **Thumbnails**: Show small game preview images
-5. **Smooth Transitions**: Add fade effects between menu and games
+1. **Better RNG**: Use timer ticks or hardware entropy for random number generation instead of fixed seeds
+2. **Persistent Settings**: Save last selected game
+3. **High Score Tracking**: Share scores across launcher restarts  
+4. **Game Categories**: Organize into Games, Demos, Utilities
+5. **Thumbnails**: Show small game preview images
+6. **Smooth Transitions**: Add fade effects between menu and games
 6. **Multi-Page Menus**: Support more than 8 entries with pagination
 7. **Search/Filter**: Quick game selection by first letter
 

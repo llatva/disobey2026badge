@@ -150,7 +150,7 @@ fn draw_menu(display: &mut Display, state: &MenuState) {
 
     // Draw controls hint
     let hint_style = MonoTextStyle::new(&FONT_6X10, Rgb565::CSS_GRAY);
-    Text::new("A=Launch  SELECT=Quit", Point::new(140, H - 10), hint_style)
+    Text::new("A=Launch  SELECT=Back", Point::new(140, H - 10), hint_style)
         .draw(display)
         .unwrap();
 
