@@ -13,8 +13,6 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::{AtomicBool, Ordering};
-
 use defmt::info;
 #[allow(clippy::wildcard_imports)]
 use disobey2026badge::*;
@@ -39,9 +37,6 @@ esp_bootloader_esp_idf::esp_app_desc!();
 
 const W: i32 = 320;
 const H: i32 = 170;
-
-// Global flag for returning to menu
-static RETURN_TO_MENU: AtomicBool = AtomicBool::new(false);
 
 // Menu item structure
 struct MenuItem {
@@ -492,13 +487,6 @@ mod snake {
         let tick = Duration::from_millis(TICK_MS);
 
         loop {
-            // Check for return to menu
-            if RETURN_TO_MENU.load(Ordering::Relaxed) {
-                info!("Returning to menu from game");
-                RETURN_TO_MENU.store(false, Ordering::Relaxed);
-                return;
-            }
-
             // Poll d-pad for next direction
             if buttons.up.is_low() {
                 game.next_direction = Direction::Up;
@@ -744,8 +732,6 @@ async fn launcher_task(
             }
             
             // Launch the selected game
-            RETURN_TO_MENU.store(false, Ordering::Relaxed);
-            
             match state.selected_index {
                 0 => snake::run(display, backlight, leds, buttons_for_select).await,
                 1 => run_breakout(display, backlight, leds, buttons_for_select).await,

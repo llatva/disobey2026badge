@@ -40,19 +40,24 @@ mod your_game {
         
         // Main game loop
         loop {
-            // Check for return to menu
-            if RETURN_TO_MENU.load(Ordering::Relaxed) {
-                RETURN_TO_MENU.store(false, Ordering::Relaxed);
-                return;
-            }
-            
             // Game logic here
             
             // Handle game over
             if game_over {
                 // Wait for A to restart or SELECT to quit
-                // Return from function to go back to menu
-                return;
+                let pressed = embassy_futures::select::select_array([
+                    Buttons::debounce_press(&mut buttons.a),
+                    Buttons::debounce_press(&mut buttons.select),
+                ])
+                .await;
+
+                if pressed.1 == 1 {
+                    // Select pressed - return to menu
+                    return;
+                } else {
+                    // A pressed - restart game
+                    // ... reset game state ...
+                }
             }
         }
     }
@@ -86,16 +91,7 @@ match state.selected_index {
 
 ### Step 4: Handle Return to Menu
 
-Your game should check the `RETURN_TO_MENU` atomic flag regularly:
-
-```rust
-if RETURN_TO_MENU.load(Ordering::Relaxed) {
-    RETURN_TO_MENU.store(false, Ordering::Relaxed);
-    return;
-}
-```
-
-Or provide a "return to menu" option in game over or pause screens:
+Provide a "return to menu" option in game over or pause screens:
 
 ```rust
 // Wait for button press
@@ -185,15 +181,15 @@ Potential improvements to the launcher system:
 
 ### Game Doesn't Return to Menu
 
-- Ensure `RETURN_TO_MENU` flag is checked in the main loop
-- Add SELECT button handler in game over/pause screens
-- Verify function returns properly to transfer control back
+- Add SELECT button handler in game over/pause screens using `embassy_futures::select`
+- Verify function returns properly to transfer control back to launcher
+- Ensure title screen also checks for SELECT to allow exit before playing
 
 ### Button Conflicts
 
-- The SELECT button is monitored globally for return-to-menu
-- Don't use SELECT for game-specific actions
+- The SELECT button should be reserved for return-to-menu functionality
 - Use A/B for primary/secondary actions in games
+- Use D-pad for movement and navigation
 
 ### Memory Issues
 
