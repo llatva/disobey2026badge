@@ -13,7 +13,7 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicBool, Ordering};
 
 use defmt::info;
 #[allow(clippy::wildcard_imports)]
@@ -669,33 +669,6 @@ async fn show_coming_soon(
     }
 
     Buttons::debounce_press(&mut buttons.select).await;
-}
-
-// ============================================================================
-// SELECT button monitoring task
-// ============================================================================
-
-#[embassy_executor::task]
-async fn select_monitor_task(buttons: &'static mut Buttons) {
-    // Create a separate button instance for select monitoring
-    // Note: This uses a different approach - checking periodically
-    loop {
-        Timer::after(Duration::from_millis(50)).await;
-        
-        if buttons.select.is_low() {
-            // Debounce
-            Timer::after(Duration::from_millis(30)).await;
-            if buttons.select.is_low() {
-                RETURN_TO_MENU.store(true, Ordering::Relaxed);
-                info!("SELECT button pressed - signaling return to menu");
-                
-                // Wait for release
-                while buttons.select.is_low() {
-                    Timer::after(Duration::from_millis(10)).await;
-                }
-            }
-        }
-    }
 }
 
 // ============================================================================
