@@ -240,6 +240,8 @@ mod snake {
                 food: Pos { x: 0, y: 0 },
                 score: 0,
                 game_over: false,
+                // Fixed seed for deterministic behavior in embedded environment
+                // In a real implementation, could use timer ticks or other entropy
                 rng: Rng::new(12345),
             };
 
@@ -463,6 +465,10 @@ mod snake {
         leds.clear();
         leds.update().await;
 
+        // Button indices for select_array
+        const BTN_A: usize = 0;
+        const BTN_SELECT: usize = 1;
+
         // Wait for A press to start
         loop {
             let pressed = embassy_futures::select::select_array([
@@ -471,7 +477,7 @@ mod snake {
             ])
             .await;
 
-            if pressed.1 == 1 {
+            if pressed.1 == BTN_SELECT {
                 // Select pressed - return to menu
                 info!("Returning to menu from title");
                 return;
@@ -527,7 +533,7 @@ mod snake {
                     ])
                     .await;
 
-                    if pressed.1 == 1 {
+                    if pressed.1 == BTN_SELECT {
                         // Select pressed - return to menu
                         info!("Returning to menu after game over");
                         return;
@@ -675,11 +681,10 @@ async fn launcher_task(
     display: &'static mut Display<'static>,
     backlight: &'static mut Backlight,
     leds: &'static mut Leds<'static>,
-    buttons_for_select: &'static mut Buttons,
+    buttons: &'static mut Buttons,
 ) {
-    // Create button resources for menu and games
-    // Note: In a real implementation, you'd need separate button instances
-    // or use a different pattern. For now, we'll use polling.
+    // The buttons are shared between menu and games via mutable references.
+    // Each game gets exclusive access while running, then returns control to the launcher.
     
     // Turn on backlight
     backlight.on();
@@ -700,18 +705,18 @@ async fn launcher_task(
         Timer::after(Duration::from_millis(50)).await;
 
         // Check button states
-        if buttons_for_select.up.is_low() {
-            Buttons::debounce_press(&mut buttons_for_select.up).await;
+        if buttons.up.is_low() {
+            Buttons::debounce_press(&mut buttons.up).await;
             state.move_up();
             draw_menu(display, &state);
             info!("Menu up: {}", state.selected_index);
-        } else if buttons_for_select.down.is_low() {
-            Buttons::debounce_press(&mut buttons_for_select.down).await;
+        } else if buttons.down.is_low() {
+            Buttons::debounce_press(&mut buttons.down).await;
             state.move_down();
             draw_menu(display, &state);
             info!("Menu down: {}", state.selected_index);
-        } else if buttons_for_select.a.is_low() {
-            Buttons::debounce_press(&mut buttons_for_select.a).await;
+        } else if buttons.a.is_low() {
+            Buttons::debounce_press(&mut buttons.a).await;
             
             let game_name = MENU_ITEMS[state.selected_index].name;
             info!("Launching: {}", game_name);
@@ -733,14 +738,14 @@ async fn launcher_task(
             
             // Launch the selected game
             match state.selected_index {
-                0 => snake::run(display, backlight, leds, buttons_for_select).await,
-                1 => run_breakout(display, backlight, leds, buttons_for_select).await,
-                2 => run_tetris(display, backlight, leds, buttons_for_select).await,
-                3 => run_skyroads(display, backlight, leds, buttons_for_select).await,
-                4 => run_space_shooter(display, backlight, leds, buttons_for_select).await,
-                5 => run_demoscene(display, backlight, leds, buttons_for_select).await,
-                6 => run_shader(display, backlight, leds, buttons_for_select).await,
-                7 => run_vectordemo(display, backlight, leds, buttons_for_select).await,
+                0 => snake::run(display, backlight, leds, buttons).await,
+                1 => run_breakout(display, backlight, leds, buttons).await,
+                2 => run_tetris(display, backlight, leds, buttons).await,
+                3 => run_skyroads(display, backlight, leds, buttons).await,
+                4 => run_space_shooter(display, backlight, leds, buttons).await,
+                5 => run_demoscene(display, backlight, leds, buttons).await,
+                6 => run_shader(display, backlight, leds, buttons).await,
+                7 => run_vectordemo(display, backlight, leds, buttons).await,
                 _ => {}
             }
             
