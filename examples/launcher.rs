@@ -649,25 +649,32 @@ async fn show_coming_soon(
         .draw(display)
         .unwrap();
 
-    // Pulse LEDs
-    for _ in 0..10 {
-        for i in 0..10 {
-            leds.set(i, Srgb::new(5, 5, 10));
+    // Pulse LEDs and wait for SELECT button
+    for i in 0..20 {
+        // Alternate LED state
+        if i % 2 == 0 {
+            for j in 0..10 {
+                leds.set(j, Srgb::new(5, 5, 10));
+            }
+        } else {
+            leds.clear();
         }
         leds.update().await;
-        Timer::after(Duration::from_millis(300)).await;
-
-        leds.clear();
-        leds.update().await;
-        Timer::after(Duration::from_millis(300)).await;
-
-        // Check for select button
-        if buttons.select.is_low() {
-            Buttons::debounce_press(&mut buttons.select).await;
+        
+        // Wait for either 300ms or SELECT button press
+        let result = embassy_futures::select::select(
+            Timer::after(Duration::from_millis(300)),
+            Buttons::debounce_press(&mut buttons.select),
+        )
+        .await;
+        
+        // If button was pressed (right side of select), return immediately
+        if matches!(result, embassy_futures::select::Either::Second(_)) {
             return;
         }
     }
 
+    // Final wait for SELECT if we didn't exit early
     Buttons::debounce_press(&mut buttons.select).await;
 }
 
@@ -693,7 +700,7 @@ async fn launcher_task(
     for i in 0..10 {
         leds.set(i, Srgb::new(0, 5, 15));
     }
-    leds.write();
+    leds.update().await;
 
     let mut state = MenuState::new();
     draw_menu(display, &state);
@@ -726,13 +733,13 @@ async fn launcher_task(
                 for i in 0..10 {
                     leds.set(i, Srgb::new(0, 20, 0));
                 }
-                leds.write();
+                leds.update().await;
                 Timer::after(Duration::from_millis(100)).await;
                 
                 for i in 0..10 {
                     leds.set(i, Srgb::new(0, 0, 0));
                 }
-                leds.write();
+                leds.update().await;
                 Timer::after(Duration::from_millis(100)).await;
             }
             
@@ -759,7 +766,7 @@ async fn launcher_task(
             for i in 0..10 {
                 leds.set(i, Srgb::new(0, 5, 15));
             }
-            leds.write();
+            leds.update().await;
         }
     }
 }
