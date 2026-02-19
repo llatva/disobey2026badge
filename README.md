@@ -38,6 +38,12 @@ let motor: disobey2026badge::Vibration = resources.vibra.into();
 cargo run --release --example <name>
 ```
 
+### Launcher
+
+| Example | Description |
+|---|---|
+| `launcher` | **Game launcher with menu system.** Navigate games/demos with D-pad (Up/Down), press A to launch. Press SELECT during any game to return to menu. Currently includes Snake game, with stubs for all other games/demos. |
+
 ### Games
 
 | Example | Description |
@@ -46,6 +52,7 @@ cargo run --release --example <name>
 | `skyroads` | Skyroads-style pseudo-3D game. Steer between lanes, jump over gaps and blocks, avoid tunnels. LEDs react to speed and state |
 | `snake` | Classic Snake game. Guide the snake to eat food and grow. D-pad to move, A to start/restart. Avoid walls and yourself. LEDs show score progression |
 | `space_shooter` | Side-scrolling space shooter using ST7789 hardware scrolling for the background. D-pad to move, A to fire. Features weapon cycling, procedural nebula background, and LED feedback |
+| `tetris` | Championship Tetris with SRS rotation, T-spins, combos, and modern mechanics. Left/Right to move, A/B to rotate, Down for soft drop, Up for hard drop, Select to hold piece, Start to pause/restart |
 
 ### Demos
 
